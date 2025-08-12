@@ -344,7 +344,33 @@
                         </div>
                         <button onclick="goBackToProducts()" class="btn-primary px-6 py-2 rounded-full font-medium">← Վերադառնալ</button>
                     </div>
-                    
+                    <div>
+  <label>Գումար</label>
+  <input type="text" id="amountInput" value="0" readonly class="w-full p-4 rounded-xl" />
+</div>
+
+<div id="imageContainer" style="margin-top: 20px; display: none;">
+  <img src="https://example.com/your-image.jpg" alt="Նկար" style="max-width: 100%; border-radius: 10px;">
+</div>
+
+<button id="confirmOrderBtn" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold text-lg mt-4">
+  ✅ Հաստատել պատվերը
+</button>
+
+<script>
+  document.getElementById('confirmOrderBtn').addEventListener('click', function() {
+    // Գումարը դնում ենք ավտոմատ 4
+    document.getElementById('amountInput').value = "4";
+
+    // Ցույց ենք տալիս նկարը
+    document.getElementById('imageContainer').style.display = 'block';
+
+    // Այստեղ կոճակը անջատելու կամ մյուս գործողությունները կարող ես ավելացնել
+    this.disabled = true;
+    this.textContent = 'Հաստատված';
+  });
+</script>
+
                     <div class="space-y-6 mb-8">
                         <div class="glass-card p-6 rounded-xl">
                             <h4 class="font-bold text-white mb-4 text-xl">📋 Պատվերի մանրամասներ:</h4>
