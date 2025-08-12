@@ -1,227 +1,392 @@
-<!doctype html>
-<html lang="hy">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Telegram Mini App — Online Bisnes</title>
-  <style>
-    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;}
-    body{padding:18px;background:#f5f7fb;color:#111}
-    .card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(20,20,40,0.06)}
-    .row{display:flex;gap:8px;align-items:center}
-    select,input,button{padding:10px;border-radius:8px;border:1px solid #e3e6ef}
-    button{background:#2a8bf2;color:white;border:none;cursor:pointer}
-    .small{font-size:13px;color:#556}
-    .product{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #eee}
-    .product:last-child{border-bottom:none}
-    .cart-item{display:flex;justify-content:space-between;padding:6px 0}
-    .muted{color:#667;}
-    .danger{color:#b33}
-    textarea{width:100%;min-height:64px}
-  </style>
-</head>
-<body>
-  <h2>Mini Store — Telegram Web App</h2>
-  <div class="card">
-    <div class="small">Ընտրեք տարածքը</div>
-    <select id="district">
-      <option>Կենտրոն</option>
-      <option>Կոմիտաս</option>
-      <option>Աջափնյակ</option>
-      <option>Մասիվ</option>
-      <option>Նոր Նորք</option>
-    </select>
-  </div>
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingCart, ArrowLeft, ChevronRight, Check, CreditCard, MapPin, Loader2 } from "lucide-react";
 
-  <div class="card">
-    <div class="small">Ապրանքներ</div>
-    <div id="products"></div>
-  </div>
+/**
+ * Telegram Mini App – Green Animated UI
+ * - Կանաչ թեմա, հարթ անիմացիաներ
+ * - Եռաստիճան հոսք: Տարածք → Ապրանք → Վճարում
+ * - 0.5G = $26, 1.0G = $35 (մինիմումներ)
+ * - Dash վճարման օրինակ՝ գործարքի հեշի հաստատմամբ
+ *
+ * Օգտագործում (տեղային փորձարկում):
+ * 1) Տեղադրեք React միջավայր (Vite/CRA/Next). Այս կոմպոնենտը կարող եք վերցնել որպես էջ կամ վիջեթ.
+ * 2) TailwindCSS ակտիվ է according to project setup. (Canvas preview already supports Tailwind.)
+ * 3) Եթե աշխատեցնում եք Telegram-ում, համոզվեք որ index.html-ում միացված է Telegram WebApp SDK (https://telegram.org/js/telegram-web-app.js)
+ */
 
-  <div class="card">
-    <div class="small">Պատվերի էջ</div>
-    <div id="cart"></div>
-    <div style="margin-top:8px" class="row">
-      <button id="checkoutBtn">Վճարել / Send to bot</button>
-      <div class="muted" style="margin-left:auto" id="totalUSD">Ընդհանուր՝ $0.00</div>
-    </div>
-  </div>
+const AREAS = [
+  { id: "kentron", label: "Կենտրոն" },
+  { id: "komitas", label: "Կոմիտաս" },
+  { id: "ajapnyak", label: "Աջափնյակ" },
+  { id: "masiv", label: "Մասիվ" },
+  { id: "nornorq", label: "Նոր Նորք" },
+];
 
-  <div class="card" id="paymentCard" style="display:none">
-    <div class="small">Վճարում (DASH)</div>
-    <div class="row"><div class="muted">Փոխանցել այս հասցեին:</div><div style="margin-left:auto" id="dashAddr">—</div></div>
-    <div class="small" style="margin-top:8px">Փոխանցում արեք և տեղադրեք գործարքի (tx) ID</div>
-    <input id="txid" placeholder="Մուտքագրեք TXID (օրինակ՝ c980d2...)" style="width:100%">
-    <div style="margin-top:8px" class="row">
-      <button id="verifyTx">Ստուգել TX</button>
-      <div id="txStatus" class="muted" style="margin-left:8px"></div>
-    </div>
-    <div style="margin-top:10px" class="small muted">Նշում. եթե API-ն բարդ պատճառներով չի արձագանքում, ստուգող արձագանքը կարող է անհամապատասխան լինել։</div>
-  </div>
+const PRODUCTS = [
+  { id: "0.5G", title: "0.5G", price: 26.0, min: 26.0 },
+  { id: "1.0G", title: "1.0G", price: 35.0, min: 35.0 },
+];
 
-  <script>
-    // CONFIG — Ստուգեք ու թարմացրեք ըստ ձեր պահանջի
-    const DASH_ADDRESS = 'XxYourDashAddressHereX'; // <-- փոխել ձեր DASH հասցեով
+type Step = 0 | 1 | 2; // 0=Area, 1=Product, 2=Checkout
 
-    // Ապրանքի արժեքներ USD-ում
-    const PRODUCTS = [
-      { id: '0.5g', title: 'Էնտրի 0.5G (1 հատ)', weight:'0.5G', priceUsd:26 },
-      { id: '1.0g', title: 'Էնտրի 1.0G (1 հատ)', weight:'1.0G', priceUsd:35 }
-    ];
+export default function TelegramMiniAppGreen() {
+  const [step, setStep] = useState<Step>(0);
+  const [area, setArea] = useState<string | null>(null);
+  const [productId, setProductId] = useState<string | null>(null);
+  const [qty, setQty] = useState(1);
+  const [txHash, setTxHash] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-    // Քննարկում — մենք չենք կատարում USD->DASH փոխարկում ավտոմատ՝ առանց API
-    // Այդ պատճառով այստեղ դուք կարող եք սահմանել նվազագույնի պահանջը անմիջապես DASH-ով
-    const REQUIRED_DASH = {
-      '0.5g': 0.01, // 0.01 DASH որպես օրինակ; փոխել ըստ իսկական պահանջի
-      '1.0g': 0.02  // 0.02 DASH որպես օրինակ
-    };
+  const product = useMemo(
+    () => PRODUCTS.find((p) => p.id === productId) || null,
+    [productId]
+  );
 
-    // ==================================
-    // UI bootstrap
-    const productsEl = document.getElementById('products');
-    const cartEl = document.getElementById('cart');
-    const totalUSDel = document.getElementById('totalUSD');
-    const checkoutBtn = document.getElementById('checkoutBtn');
-    const paymentCard = document.getElementById('paymentCard');
-    const dashAddrEl = document.getElementById('dashAddr');
-    const txidInput = document.getElementById('txid');
-    const verifyBtn = document.getElementById('verifyTx');
-    const txStatus = document.getElementById('txStatus');
+  const total = useMemo(() => {
+    if (!product) return 0;
+    return +(product.price * qty).toFixed(2);
+  }, [product, qty]);
 
-    let cart = {};
+  // Telegram WebApp API – expand & theme sync
+  useEffect(() => {
+    // @ts-ignore
+    const tg = (window as any)?.Telegram?.WebApp;
+    try {
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        tg.MainButton?.hide();
+        tg.setHeaderColor?.("#022c22"); // dark emerald
+        tg.setBackgroundColor?.("#041a17");
+      }
+    } catch (e) {
+      // ignore if not in Telegram
+    }
+  }, []);
 
-    function renderProducts(){
-      productsEl.innerHTML='';
-      PRODUCTS.forEach(p=>{
-        const div = document.createElement('div'); div.className='product';
-        div.innerHTML = `
-          <div>
-            <div><strong>${p.title}</strong></div>
-            <div class="small muted">${p.weight} — $${p.priceUsd}</div>
+  function goNext() {
+    setStep((s) => Math.min(2, (s + 1) as Step));
+  }
+  function goBack() {
+    setStep((s) => Math.max(0, (s - 1) as Step));
+  }
+
+  function selectArea(a: string) {
+    setArea(a);
+    setTimeout(() => setStep(1), 200);
+  }
+
+  function selectProduct(pid: string) {
+    setProductId(pid);
+    setTimeout(() => setStep(2), 200);
+  }
+
+  function validateMin(): string | null {
+    if (!product) return "Ընտրեք ապրանք";
+    if (total < product.min) {
+      return `Մինիմումը՝ $${product.min.toFixed(2)} (ընթացիկ՝ $${total.toFixed(2)})`;
+    }
+    return null;
+  }
+
+  async function handleSubmit() {
+    const err = validateMin();
+    if (err) return alert(err);
+
+    // Demo: imitate server submit
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 900));
+    setSubmitting(false);
+
+    alert("Պատվերը գրանցվեց։ Խնդրում ենք ավարտել վճարումը և կցել գործարքի հեշը։");
+  }
+
+  const explorerUrl = txHash
+    ? `https://explorer.dash.org/insight/tx/${encodeURIComponent(txHash.trim())}`
+    : "";
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-emerald-50 flex flex-col items-stretch">
+      {/* Header */}
+      <div className="sticky top-0 z-40 backdrop-blur border-b border-emerald-800/50 bg-emerald-950/70">
+        <div className="max-w-xl mx-auto px-4 py-3 flex items-center gap-3">
+          {step > 0 ? (
+            <button
+              onClick={goBack}
+              className="p-2 rounded-2xl bg-emerald-900/60 hover:bg-emerald-800 active:scale-95 transition"
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          ) : (
+            <span className="p-2" />
+          )}
+
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold tracking-wide">
+              {step === 0 && "Ընտրել տարածք"}
+              {step === 1 && "Ընտրել ապրանք (2 էջից 1-ը)"}
+              {step === 2 && "Վճարում (3-րդ էջ)"}
+            </h1>
+            <div className="text-xs text-emerald-300/80">
+              {area ? AREAS.find((x) => x.id === area)?.label : "Տարածք դեռ ընտրված չէ"}
+            </div>
           </div>
-          <div style="min-width:170px;text-align:right">
-            <input type="number" min="0" step="1" value="0" data-id="${p.id}" style="width:72px"> <button data-add="${p.id}">Ավելացնել</button>
-          </div>`;
-        productsEl.appendChild(div);
-      });
 
-      // add handlers
-      productsEl.querySelectorAll('[data-add]').forEach(btn=>{
-        btn.addEventListener('click', e=>{
-          const id = e.target.getAttribute('data-add');
-          const qtyInput = productsEl.querySelector(`input[data-id="${id}"]`);
-          const q = parseInt(qtyInput.value||'0',10);
-          if(q>0){ cart[id] = (cart[id]||0) + q; qtyInput.value = 0; renderCart(); }
-        });
-      });
-    }
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1 rounded-full bg-emerald-800/70 text-xs">
+              {total > 0 ? `$${total.toFixed(2)}` : "0"}
+            </div>
+            <div className="p-2 rounded-2xl bg-emerald-900/60">
+              <ShoppingCart className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-    function renderCart(){
-      cartEl.innerHTML='';
-      let total = 0;
-      for(const id in cart){
-        const p = PRODUCTS.find(x=>x.id===id);
-        const qty = cart[id];
-        const row = document.createElement('div'); row.className='cart-item';
-        row.innerHTML = `<div>${p.title} × ${qty}</div><div>$${(p.priceUsd*qty).toFixed(2)} <button data-rem="${id}">x</button></div>`;
-        cartEl.appendChild(row);
-        total += p.priceUsd*qty;
-      }
-      if(Object.keys(cart).length===0) cartEl.innerHTML='<div class="muted">Գման չապրանք</div>';
-      totalUSDel.textContent = 'Ընդհանուր՝ $' + total.toFixed(2);
-      cartEl.querySelectorAll('[data-rem]').forEach(b=>b.addEventListener('click', e=>{ const id=e.target.getAttribute('data-rem'); delete cart[id]; renderCart(); }));
-    }
+      {/* Content */}
+      <main className="flex-1 max-w-xl mx-auto w-full px-4 py-6">
+        <Stepper step={step} />
 
-    checkoutBtn.addEventListener('click', ()=>{
-      if(Object.keys(cart).length===0){ alert('Սկզբի համար ավելացրե՛ք առնվազն 1 ապրանք։'); return; }
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <motion.div
+              key="step0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-4"
+            >
+              <SectionTitle icon={<MapPin className="w-4 h-4" />}>Տարածքներ</SectionTitle>
+              <div className="grid grid-cols-2 gap-3">
+                {AREAS.map((a) => (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.02 }}
+                    key={a.id}
+                    onClick={() => selectArea(a.id)}
+                    className="rounded-2xl border border-emerald-800/60 bg-emerald-900/40 p-4 text-left shadow-sm hover:shadow-md hover:bg-emerald-900/60 transition"
+                  >
+                    <div className="font-medium text-emerald-100">{a.label}</div>
+                    <div className="text-xs text-emerald-300/80 mt-1">Սեղմեք՝ ընտրելու համար</div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-      // Ստեղծել պատվերի մեթա
-      const district = document.getElementById('district').value;
-      const orderItems = Object.keys(cart).map(id=>{
-        const p = PRODUCTS.find(x=>x.id===id);
-        return { id, title:p.title, qty:cart[id], priceUsd:p.priceUsd };
-      });
-      const totalUsd = orderItems.reduce((s,i)=>s + i.qty*i.priceUsd, 0);
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-4"
+            >
+              <SectionTitle icon={<ChevronRight className="w-4 h-4" />}>Ապրանքներ (էջ 1/2)</SectionTitle>
 
-      // Սահմանել որեւէ պահանջ DASH-ում (մի քանի ապրանք առանց փոխարկման => նայում ենք ամենամեծ պահանջը)
-      let requiredDash = 0;
-      for(const id in cart){ requiredDash = Math.max(requiredDash, REQUIRED_DASH[id] || 0); }
+              <div className="grid grid-cols-1 gap-4">
+                {PRODUCTS.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    title={p.title}
+                    price={p.price}
+                    min={p.min}
+                    onClick={() => selectProduct(p.id)}
+                  />
+                ))}
+              </div>
 
-      // Ցույց տալ ուղեցույցը վճարման համար
-      paymentCard.style.display = 'block';
-      dashAddrEl.textContent = DASH_ADDRESS;
+              <div className="text-xs text-emerald-300/80">Հուշում․ սեղմեք քաշի քարտիկի վրա՝ վերադառնալու/շարունակելու․</div>
+            </motion.div>
+          )}
 
-      // Պատրաստել ներքին խնդիրը, որը ուղարկվում է դեպի bot՝ sendData-ով
-      const payload = { type:'order_preview', district, items:orderItems, totalUsd, requiredDash };
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-5"
+            >
+              <SectionTitle icon={<CreditCard className="w-4 h-4" />}>Վճարում (էջ 2/2)</SectionTitle>
 
-      // If running inside Telegram WebApp, show MainButton and prepare send
-      if(window.Telegram && window.Telegram.WebApp){
-        try{
-          window.Telegram.WebApp.MainButton.setText('Գործարք ուղարկել բոտին');
-          window.Telegram.WebApp.MainButton.show();
-          window.Telegram.WebApp.MainButton.onClick(()=>{
-            // Send order preview JSON to bot via sendData
-            window.Telegram.WebApp.sendData(JSON.stringify(payload));
-          });
-        }catch(e){ console.warn(e); }
-      } else {
-        // not in Telegram — fallback: copy JSON to clipboard
-        alert('Բառացիորեն բոտ-մոդ կամ Telegram WebView-ում չէք: Պատվերի տվյալները պատճենվել են clipboard-ին. Խնդրում ենք ուղարկել դրանք ձեր բոտին.');
-        navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-      }
-    });
+              <div className="rounded-2xl border border-emerald-800/60 bg-emerald-900/40 p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-emerald-300/90">Տարածք</div>
+                    <div className="font-semibold">{AREAS.find((x) => x.id === area)?.label}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-emerald-300/90">Ապրանք</div>
+                    <div className="font-semibold">{product?.title}</div>
+                  </div>
+                </div>
 
-    // TX verification — basic implementation using Insight API
-    verifyBtn.addEventListener('click', async ()=>{
-      const txid = (txidInput.value||'').trim();
-      txStatus.textContent = '';
-      if(!txid){ txStatus.textContent = 'Տվեք TXID'; return; }
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">Քանակ</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      className="px-3 py-1 rounded-xl bg-emerald-800/60 hover:bg-emerald-800 transition"
+                    >
+                      −
+                    </button>
+                    <div className="min-w-[3rem] text-center font-semibold">{qty}</div>
+                    <button
+                      onClick={() => setQty((q) => Math.min(99, q + 1))}
+                      className="px-3 py-1 rounded-xl bg-emerald-800/60 hover:bg-emerald-800 transition"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
 
-      txStatus.textContent = 'Ստուգվում...';
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">Գումար</div>
+                  <div className="text-lg font-bold">${total.toFixed(2)}</div>
+                </div>
 
-      try{
-        // Example API: https://explorer.dash.org/insight-api/tx/{txid}
-        const res = await fetch('https://explorer.dash.org/insight-api/tx/' + txid);
-        if(!res.ok){ txStatus.textContent = 'API error: ' + res.status; return; }
-        const data = await res.json();
+                <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-800/60 text-sm leading-relaxed">
+                  <div className="font-semibold mb-1">Dash վճարումը (օրինակ)</div>
+                  <div>
+                    Փոխանցեք նվազագույնը
+                    {" "}
+                    <span className="font-semibold">${product?.min.toFixed(2)} USD</span>
+                    {" "}
+                    համարժեք DASH նշված հասցեին (սրա ինտեգրումը կարող եք կապել սերվերին). Վճարումից հետո կցեք գործարքի հեշը՝ ստուգման համար։
+                  </div>
+                </div>
 
-        // Քանի որ API ֆորմատը կարող է տարբեր լինել, փորձենք գտնել ելքային արժեքները ու հասցեները
-        let totalToOurAddr = 0;
-        if(Array.isArray(data.vout)){
-          for(const v of data.vout){
-            if(v.scriptPubKey && v.scriptPubKey.addresses){
-              if(v.scriptPubKey.addresses.includes(DASH_ADDRESS)){
-                // v.value usually փողի արժեքն է (Dash)
-                totalToOurAddr += parseFloat(v.value||0);
-              }
-            }
-          }
-        }
+                <div className="space-y-2">
+                  <label className="text-sm">Գործարքի հեշ (tx hash)</label>
+                  <input
+                    value={txHash}
+                    onChange={(e) => setTxHash(e.target.value)}
+                    placeholder="օր․ c980d2535797..."
+                    className="w-full rounded-xl bg-emerald-950/60 border border-emerald-800/60 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  {explorerUrl && (
+                    <a
+                      href={explorerUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-emerald-300 hover:text-emerald-200 text-sm underline"
+                    >
+                      Բացել Dash Explorer⁠ <LinkArrow />
+                    </a>
+                  )}
+                </div>
 
-        // Վերցնել պահանջը (եթե պատվերը դեռ պահպանված չէ՝ վերցնել վերջին պատվերից)
-        // Здесь простой подход: берем максимальный REQUIRED_DASH среди cart
-        let required = 0;
-        for(const id in cart) required = Math.max(required, REQUIRED_DASH[id] || 0);
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-emerald-50 font-semibold px-4 py-3 shadow-lg shadow-emerald-900/40 disabled:opacity-60"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Պահպանվում է…
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" /> Ավարտել պատվերը
+                    </>
+                  )}
+                </motion.button>
 
-        if(totalToOurAddr >= required && totalToOurAddr>0){
-          txStatus.innerHTML = 'OK — TX հաստատված, փոխանցվել է ' + totalToOurAddr + ' DASH. Ստուգեք բոտը՝ պրոցեսը ավարտելու համար.';
+                <div className="text-xs text-emerald-300/80">
+                  * Սերվերային ստուգման դեպքում հաստատեք tx-ի ստատուսը explorer-ից կամ ձեր node-ից և պահեք order-ի վիճակը DB-ում։
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
 
-          // Отправляем сам TXID в бота (если Telegram WebApp доступен)
-          if(window.Telegram && window.Telegram.WebApp){
-            const sendPayload = { type:'tx_confirm', txid, paidDash: totalToOurAddr };
-            window.Telegram.WebApp.sendData(JSON.stringify(sendPayload));
-          }
+      {/* Bottom CTA / Next */}
+      {step === 0 && (
+        <div className="max-w-xl mx-auto w-full px-4 pb-6">
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => (area ? goNext() : alert("Նախ ընտրեք տարածքը"))}
+            className="w-full rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-emerald-50 font-semibold px-4 py-3 shadow-lg shadow-emerald-900/40"
+          >
+            Շարունակել
+          </motion.button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-        } else {
-          txStatus.innerHTML = 'Փոխանցումը չի բավարարում պահանջը: Մենք ստացանք ' + totalToOurAddr + ' DASH — պահանջվել է նվազագույնը ' + required + ' DASH.';
-        }
+function SectionTitle({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 text-sm uppercase tracking-wide text-emerald-300/80">
+      <div className="p-1.5 rounded-xl bg-emerald-900/60 border border-emerald-800/60">{icon}</div>
+      <span>{children}</span>
+    </div>
+  );
+}
 
-      }catch(err){ console.error(err); txStatus.textContent = 'Սխալ ստուգման ընթացքում: ' + err.message; }
-    });
+function ProductCard({ title, price, min, onClick }: { title: string; price: number; min: number; onClick?: () => void }) {
+  return (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      className="w-full text-left rounded-2xl overflow-hidden border border-emerald-800/60 bg-emerald-900/40 hover:bg-emerald-900/60 shadow-sm hover:shadow-md transition"
+    >
+      <div className="p-4 flex items-center justify-between">
+        <div>
+          <div className="text-lg font-bold">{title}</div>
+          <div className="text-xs text-emerald-300/90">Մինիմում՝ ${min.toFixed(2)}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-sm">Գին</div>
+          <div className="text-xl font-extrabold">${price.toFixed(2)}</div>
+        </div>
+      </div>
+      <div className="px-4 pb-4 flex items-center justify-between text-sm text-emerald-300/90">
+        <span>Սեղմեք՝ ընտրելու</span>
+        <ChevronRight className="w-4 h-4" />
+      </div>
+    </motion.button>
+  );
+}
 
-    // սկիզբ
-    renderProducts(); renderCart();
+function Stepper({ step }: { step: Step }) {
+  const items = ["Տարածք", "Ապրանք", "Վճարում"];
+  return (
+    <div className="flex items-center justify-between gap-2 mb-6">
+      {items.map((label, idx) => {
+        const active = idx <= step;
+        return (
+          <div key={label} className="flex-1 flex items-center gap-2">
+            <div
+              className={[
+                "h-2 rounded-full transition-all",
+                active ? "bg-emerald-500" : "bg-emerald-800/60",
+              ].join(" ")}
+              style={{ width: "100%" }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-  </script>
-</body>
-</html>
+function LinkArrow() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 17L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M8 7H17V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
