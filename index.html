@@ -1,754 +1,227 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hy">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PerviRams - Կրիպտո Շուկա</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body { 
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(-45deg, #2d3748, #4a5568, #553c9a, #6b46c1, #1e3a8a, #1e40af);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .glass-card {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-        
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            background: rgba(0, 0, 0, 0.4);
-        }
-        
-        .location-card {
-            background: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .location-card:hover {
-            background: rgba(0, 0, 0, 0.35);
-            transform: scale(1.02);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        .location-card.selected {
-            background: rgba(34, 197, 94, 0.3);
-            border-color: rgba(34, 197, 94, 0.5);
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-        }
-        
-        .product-card {
-            background: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .product-card:hover {
-            background: rgba(0, 0, 0, 0.35);
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-        }
-        
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.6);
-        }
-        
-        .floating-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            animation: float 20s infinite linear;
-        }
-        
-        .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { left: 20%; animation-delay: -2s; }
-        .particle:nth-child(3) { left: 30%; animation-delay: -4s; }
-        .particle:nth-child(4) { left: 40%; animation-delay: -6s; }
-        .particle:nth-child(5) { left: 50%; animation-delay: -8s; }
-        .particle:nth-child(6) { left: 60%; animation-delay: -10s; }
-        .particle:nth-child(7) { left: 70%; animation-delay: -12s; }
-        .particle:nth-child(8) { left: 80%; animation-delay: -14s; }
-        .particle:nth-child(9) { left: 90%; animation-delay: -16s; }
-        
-        @keyframes float {
-            0% { 
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { 
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-        
-        .step-indicator {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-        }
-        
-        .input-glass {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-        }
-        
-        .input-glass::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .input-glass:focus {
-            background: rgba(0, 0, 0, 0.4);
-            border-color: rgba(255, 255, 255, 0.3);
-            outline: none;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Telegram Mini App — Online Bisnes</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;}
+    body{padding:18px;background:#f5f7fb;color:#111}
+    .card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(20,20,40,0.06)}
+    .row{display:flex;gap:8px;align-items:center}
+    select,input,button{padding:10px;border-radius:8px;border:1px solid #e3e6ef}
+    button{background:#2a8bf2;color:white;border:none;cursor:pointer}
+    .small{font-size:13px;color:#556}
+    .product{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #eee}
+    .product:last-child{border-bottom:none}
+    .cart-item{display:flex;justify-content:space-between;padding:6px 0}
+    .muted{color:#667;}
+    .danger{color:#b33}
+    textarea{width:100%;min-height:64px}
+  </style>
 </head>
 <body>
-    <!-- Floating Particles Background -->
-    <div class="floating-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
+  <h2>Mini Store — Telegram Web App</h2>
+  <div class="card">
+    <div class="small">Ընտրեք տարածքը</div>
+    <select id="district">
+      <option>Կենտրոն</option>
+      <option>Կոմիտաս</option>
+      <option>Աջափնյակ</option>
+      <option>Մասիվ</option>
+      <option>Նոր Նորք</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="small">Ապրանքներ</div>
+    <div id="products"></div>
+  </div>
+
+  <div class="card">
+    <div class="small">Պատվերի էջ</div>
+    <div id="cart"></div>
+    <div style="margin-top:8px" class="row">
+      <button id="checkoutBtn">Վճարել / Send to bot</button>
+      <div class="muted" style="margin-left:auto" id="totalUSD">Ընդհանուր՝ $0.00</div>
     </div>
+  </div>
 
-    <!-- Header -->
-    <header class="glass-card mx-4 mt-4 mb-8">
-        <div class="container mx-auto px-6 py-6">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-4">
-                    <div class="w-14 h-14 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl flex items-center justify-center shadow-lg">
-                        <span class="text-white text-2xl font-bold">₽</span>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl font-bold text-white">PerviRams</h1>
-                        <p class="text-white/80 text-sm">Կրիպտո Շուկա</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="glass-card text-white px-4 py-2 rounded-full text-sm font-medium">
-                        📍 Մարսեր Մալաթիա Սեբաստիա Կոյտաս Կենտրոն Աջափնյակ Նոր Նորք
-                    </div>
-                    <div class="bg-green-500/20 backdrop-blur-sm text-green-300 px-3 py-1 rounded-full text-sm font-medium border border-green-400/30">
-                        🟢 Օնլայն
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="container mx-auto px-4 pb-8">
-        <div class="grid lg:grid-cols-3 gap-8 relative">
-            <!-- Order Process Section -->
-            <div class="lg:col-span-2 space-y-8 relative z-10">
-                <!-- Step 1: Location Selection -->
-                <div class="glass-card p-8 relative" id="locationStep">
-                    <div class="flex items-center mb-8">
-                        <div class="step-indicator w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">1</div>
-                        <h2 class="text-3xl font-bold text-white">📍 Ընտրեք տեղակայությունը</h2>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="location-card text-white rounded-2xl p-6" onclick="selectLocation('kentron')">
-                            <div class="flex flex-col items-center text-center">
-                                <div class="text-4xl mb-3">🏛️</div>
-                                <h3 class="text-xl font-bold mb-2">Կենտրոն</h3>
-                                <p class="text-sm text-white/80">Հասանելի ապրանքներ: 2</p>
-                            </div>
-                        </div>
-
-                        <div class="location-card text-white rounded-2xl p-6" onclick="selectLocation('malatia')">
-                            <div class="flex flex-col items-center text-center">
-                                <div class="text-4xl mb-3">🏘️</div>
-                                <h3 class="text-xl font-bold mb-2">Մալաթիա</h3>
-                                <p class="text-sm text-white/80">Հասանելի ապրանքներ: 2</p>
-                            </div>
-                        </div>
-
-                        <div class="location-card text-white rounded-2xl p-6" onclick="selectLocation('sebastia')">
-                            <div class="flex flex-col items-center text-center">
-                                <div class="text-4xl mb-3">🏙️</div>
-                                <h3 class="text-xl font-bold mb-2">Սեբաստիա</h3>
-                                <p class="text-sm text-white/80">Հասանելի ապրանքներ: 2</p>
-                            </div>
-                        </div>
-
-                        <div class="location-card text-white rounded-2xl p-6" onclick="selectLocation('ajapnyak')">
-                            <div class="flex flex-col items-center text-center">
-                                <div class="text-4xl mb-3">🌆</div>
-                                <h3 class="text-xl font-bold mb-2">Աջափնյակ</h3>
-                                <p class="text-sm text-white/80">Հասանելի ապրանքներ: 7</p>
-                            </div>
-                        </div>
-
-                        <div class="location-card text-white rounded-2xl p-6" onclick="selectLocation('marser')">
-                            <div class="flex flex-col items-center text-center">
-                                <div class="text-4xl mb-3">🏞️</div>
-                                <h3 class="text-xl font-bold mb-2">Մարսեր</h3>
-                                <p class="text-sm text-white/80">Հասանելի ապրանքներ: 9</p>
-                            </div>
-                        </div>
-
-                        <div class="location-card text-white rounded-2xl p-6" onclick="selectLocation('nor-norq')">
-                            <div class="flex flex-col items-center text-center">
-                                <div class="text-4xl mb-3">🏘️</div>
-                                <h3 class="text-xl font-bold mb-2">Նոր Նորք</h3>
-                                <p class="text-sm text-white/80">Հասանելի ապրանքներ: 100</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 2: Product Selection -->
-                <div class="glass-card p-8 hidden relative" id="productStep">
-                    <div class="flex items-center justify-between mb-8">
-                        <div class="flex items-center">
-                            <div class="step-indicator w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">2</div>
-                            <h2 class="text-3xl font-bold text-white">🛒 Ընտրեք ապրանքը</h2>
-                        </div>
-                        <button onclick="goBackToLocation()" class="btn-primary px-6 py-2 rounded-full font-medium">← Վերադառնալ</button>
-                    </div>
-                    
-                    <div class="mb-6 glass-card p-4 rounded-xl">
-                        <p class="text-white"><strong>📍 Ընտրված տեղակայություն:</strong> <span id="selectedLocationName" class="text-green-300"></span></p>
-                    </div>
-                    
-                    <!-- Product Cards -->
-                    <div class="grid md:grid-cols-2 gap-6" id="productCards">
-                        <!-- 0.5g Product -->
-                        <div class="product-card text-white rounded-2xl p-6" onclick="selectProduct('0.5g', 26)">
-                            <div class="text-center mb-4">
-                                <div class="text-5xl mb-3">💎</div>
-                                <h3 class="text-2xl font-bold mb-2">Պրեմիում Փաթեթ</h3>
-                                <p class="text-lg text-white/90 mb-1">Քանակ: 0.5g</p>
-                                <p class="text-sm text-white/70">Բարձր որակ • Արագ առաքում</p>
-                            </div>
-                            <div class="text-center mb-4">
-                                <div class="text-4xl font-bold text-green-300">26$</div>
-                                <div class="text-sm text-white/70">USD</div>
-                            </div>
-                            <div class="flex justify-center space-x-3">
-                                <span class="bg-white/20 px-3 py-1 rounded-full text-sm">⚡ Ակտիվ</span>
-                                <span class="bg-green-500/30 px-3 py-1 rounded-full text-sm border border-green-400/50">✅ Հասանելի</span>
-                            </div>
-                        </div>
-
-                        <!-- 1.0g Product -->
-                        <div class="product-card text-white rounded-2xl p-6" onclick="selectProduct('1.0g', 33)">
-                            <div class="text-center mb-4">
-                                <div class="text-5xl mb-3">💎</div>
-                                <h3 class="text-2xl font-bold mb-2">Մեծ Փաթեթ</h3>
-                                <p class="text-lg text-white/90 mb-1">Քանակ: 1.0g</p>
-                                <p class="text-sm text-white/70">Լավագույն գին • Խնայողություն</p>
-                            </div>
-                            <div class="text-center mb-4">
-                                <div class="text-4xl font-bold text-green-300">33$</div>
-                                <div class="text-sm text-white/70">USD</div>
-                                <div class="inline-block bg-yellow-500/30 px-2 py-1 rounded-full text-xs mt-1 border border-yellow-400/50">🔥 Հիթ</div>
-                            </div>
-                            <div class="flex justify-center space-x-3">
-                                <span class="bg-white/20 px-3 py-1 rounded-full text-sm">⚡ Ակտիվ</span>
-                                <span class="bg-green-500/30 px-3 py-1 rounded-full text-sm border border-green-400/50">✅ Հասանելի</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 3: Order Confirmation -->
-                        </div>
-                        <button onclick="goBackToProducts()" class="btn-primary px-6 py-2 rounded-full font-medium">← Վերադառնալ</button>
-                    </div>
-                    <div>
-  <label>Գումար</label>
-  <input type="text" id="amountInput" value="0" readonly class="w-full p-4 rounded-xl" />
-</div>
-
-<div id="imageContainer" style="margin-top: 20px; display: none;">
-  <img src="https://yandex.com/images/search?from=tabbar&img_url=https%3A%2F%2Fpbs.twimg.com%2Fmedia%2FE_6lHf_VIAQoytk.jpg&lr=10262&pos=5&rpt=simage&text=poto" style="max-width: 100%; border-radius: 10px;">
-</div>
-
-<button id="confirmOrderBtn" class="w-full bg-green-500 text-white py-4 rounded-xl font-semibold text-lg mt-4">
-  ✅ Հաստատել պատվերը
-</button>
-    </div>                       <button onclick="goBackToProducts()" class="btn-primary px-6 py-2 rounded-full font-medium">← Վերադառնալ</button>
-<script>
-  document.getElementById('confirmOrderBtn').addEventListener('click', function() {
-    // Գումարը դնում ենք ավտոմատ 4
-    document.getElementById('amountInput').value = "4";
-
-    // Ցույց ենք տալիս նկարը
-    document.getElementById('imageContainer').style.display = 'block';
-
-    // Այստեղ կոճակը անջատելու կամ մյուս գործողությունները կարող ես ավելացնել
-    this.disabled = true;
-    this.textContent = 'Հաստատված';
-  });
-</script>
-
-                    <div class="space-y-6 mb-8">
-                        <div class="glass-card p-6 rounded-xl">
-                            <h4 class="font-bold text-white mb-4 text-xl">📋 Պատվերի մանրամասներ:</h4>
-                            <div id="orderSummary" class="space-y-3 text-white/90"></div>
-                        </div>
-                        
-                        <div class="glass-card p-6 rounded-xl">
-                            <h4 class="font-bold text-white mb-4 text-xl">💳 Վճարման ինֆորմացիա:</h4>
-                            <div class="space-y-2 text-white/90">
-                                <p>Ձեր մնացորդ: <span id="walletBalanceOrder" class="font-bold text-green-300">0.00 USD</span></p>
-                                <p>Պետք է վճարել: <span id="orderTotal" class="font-bold text-blue-300">0$</span></p>
-                                <p id="balanceStatus" class="text-sm"></p>
-                            </div>
-                        </div>
-
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-white mb-3">💳 Դաշ (Wallet) հասցե</label>
-                                <input type="text" id="walletAddress" value="Xg1ZHSPT1wBY3Y11cEJY6KTQQMYPs1we1p" class="w-full p-4 input-glass rounded-xl">
-                  
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Sidebar -->
-            <div class="lg:col-span-1 space-y-8 relative z-10">
-                <!-- Wallet Section -->
-                <div class="glass-card text-white p-8">
-                    <h3 class="text-2xl font-bold mb-6 flex items-center">
-                        <span class="text-3xl mr-3">💳</span>
-                        Դաշ (Wallet)
-                    </h3>
-                    <div class="space-y-6">
-                        <div class="glass-card p-6 rounded-xl text-center">
-                            <div class="text-sm text-white/70 mb-2">Ձեր մնացորդը</div>
-                            <div class="text-4xl font-bold text-green-300 mb-2" id="walletBalance">0.00 USD</div>
-                            <div class="text-sm text-white/70">Հասանելի գումար</div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <button id="addFundsBtn" class="btn-success py-3 rounded-xl font-medium">
-                                💰 Լիցքավորել
-                            </button>
-                            <button id="withdrawBtn" class="btn-primary py-3 rounded-xl font-medium">
-                                💸 Հանել
-                            </button>
-                        </div>
-
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-white/70">Վերջին գործարք:</span>
-                                <span id="lastTransaction" class="text-white">-</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-white/70">Ակտիվ պատվերներ:</span>
-                                <span id="activeOrders" class="text-green-300 font-bold">0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Auto Send Section -->
-                <div class="glass-card text-white p-8">
-                    <h3 class="text-2xl font-bold mb-6 flex items-center">
-                        <span class="text-3xl mr-3">🤖</span>
-                        Ավտոմատ Ուղարկում
-                    </h3>
-                    <div class="space-y-6">
-                        <div class="glass-card p-6 rounded-xl">
-                            <div class="flex items-center justify-between mb-4">
-                                <span class="font-medium">Ավտո-ռեժիմ</span>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="autoSendToggle" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                                </label>
-                            </div>
-                            <p class="text-sm text-white/70">Ավտոմատ կերպով ուղարկել պատվերները</p>
-                        </div>
-
-                        <div class="space-y-4">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-white/70">Ուղարկված այսօր:</span>
-                                <span id="sentToday" class="font-bold text-white">0</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-white/70">Հաջող գործարքներ:</span>
-                                <span id="successfulOrders" class="font-bold text-green-300">0</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-white/70">Միջին ժամանակ:</span>
-                                <span class="font-bold text-blue-300">~15 րոպե</span>
-                            </div>
-                        </div>
-
-                        <button id="testAutoSendBtn" class="w-full btn-primary py-3 rounded-xl font-medium">
-                            🧪 Թեստ Ուղարկում
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Recent Orders -->
-                <div class="glass-card text-white p-8">
-                    <h3 class="text-2xl font-bold mb-6 flex items-center">
-                        <span class="text-3xl mr-3">📋</span>
-                        Վերջին Պատվերներ
-                    </h3>
-                    <div id="recentOrders" class="space-y-4">
-                        <div class="text-center text-white/60 py-8">
-                            <div class="text-4xl mb-3">📦</div>
-                            <p>Դեռ պատվերներ չկան</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Statistics -->
-                <div class="glass-card text-white p-8">
-                    <h3 class="text-2xl font-bold mb-6 flex items-center">
-                        <span class="text-3xl mr-3">📊</span>
-                        Վիճակագրություն
-                    </h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="text-center glass-card p-4 rounded-xl">
-                            <div class="text-3xl font-bold text-blue-300 mb-1" id="totalOrders">0</div>
-                            <div class="text-xs text-white/70">Ընդամենը պատվերներ</div>
-                        </div>
-                        <div class="text-center glass-card p-4 rounded-xl">
-                            <div class="text-3xl font-bold text-green-300 mb-1" id="totalRevenue">0$</div>
-                            <div class="text-xs text-white/70">Ընդամենը եկամուտ</div>
-                        </div>
-                        <div class="text-center glass-card p-4 rounded-xl">
-                            <div class="text-3xl font-bold text-purple-300 mb-1" id="avgOrderValue">0$</div>
-                            <div class="text-xs text-white/70">Միջին պատվեր</div>
-                        </div>
-                        <div class="text-center glass-card p-4 rounded-xl">
-                            <div class="text-3xl font-bold text-yellow-300 mb-1" id="successRate">100%</div>
-                            <div class="text-xs text-white/70">Հաջողության տոկոս</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="card" id="paymentCard" style="display:none">
+    <div class="small">Վճարում (DASH)</div>
+    <div class="row"><div class="muted">Փոխանցել այս հասցեին:</div><div style="margin-left:auto" id="dashAddr">—</div></div>
+    <div class="small" style="margin-top:8px">Փոխանցում արեք և տեղադրեք գործարքի (tx) ID</div>
+    <input id="txid" placeholder="Մուտքագրեք TXID (օրինակ՝ c980d2...)" style="width:100%">
+    <div style="margin-top:8px" class="row">
+      <button id="verifyTx">Ստուգել TX</button>
+      <div id="txStatus" class="muted" style="margin-left:8px"></div>
     </div>
+    <div style="margin-top:10px" class="small muted">Նշում. եթե API-ն բարդ պատճառներով չի արձագանքում, ստուգող արձագանքը կարող է անհամապատասխան լինել։</div>
+  </div>
 
-    <script>
-        let selectedLocation = null;
-        let selectedProduct = null;
-        let selectedPrice = 0;
-        let walletBalance = 0;
-        let orderCount = 0;
-        let totalRevenue = 0;
-        let autoSendEnabled = false;
+  <script>
+    // CONFIG — Ստուգեք ու թարմացրեք ըստ ձեր պահանջի
+    const DASH_ADDRESS = 'XxYourDashAddressHereX'; // <-- փոխել ձեր DASH հասցեով
 
-        // Step 1: Location selection
-        function selectLocation(location) {
-            selectedLocation = location;
-            
-            // Hide location step, show product step
-            document.getElementById('locationStep').classList.add('hidden');
-            document.getElementById('productStep').classList.remove('hidden');
-            
-            // Update location name
-            document.getElementById('selectedLocationName').textContent = getLocationName(location);
-        }
+    // Ապրանքի արժեքներ USD-ում
+    const PRODUCTS = [
+      { id: '0.5g', title: 'Էնտրի 0.5G (1 հատ)', weight:'0.5G', priceUsd:26 },
+      { id: '1.0g', title: 'Էնտրի 1.0G (1 հատ)', weight:'1.0G', priceUsd:35 }
+    ];
 
-        function goBackToLocation() {
-            selectedLocation = null;
-            selectedProduct = null;
-            selectedPrice = 0;
-            
-            document.getElementById('locationStep').classList.remove('hidden');
-            document.getElementById('productStep').classList.add('hidden');
-            document.getElementById('orderStep').classList.add('hidden');
-        }
+    // Քննարկում — մենք չենք կատարում USD->DASH փոխարկում ավտոմատ՝ առանց API
+    // Այդ պատճառով այստեղ դուք կարող եք սահմանել նվազագույնի պահանջը անմիջապես DASH-ով
+    const REQUIRED_DASH = {
+      '0.5g': 0.01, // 0.01 DASH որպես օրինակ; փոխել ըստ իսկական պահանջի
+      '1.0g': 0.02  // 0.02 DASH որպես օրինակ
+    };
 
-        // Step 2: Product selection
-        function selectProduct(product, price) {
-            selectedProduct = product;
-            selectedPrice = price;
-            
-            // Hide product step, show order step
-            document.getElementById('productStep').classList.add('hidden');
-            document.getElementById('orderStep').classList.remove('hidden');
-            
-            // Update order summary
-            updateOrderSummary();
-        }
+    // ==================================
+    // UI bootstrap
+    const productsEl = document.getElementById('products');
+    const cartEl = document.getElementById('cart');
+    const totalUSDel = document.getElementById('totalUSD');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const paymentCard = document.getElementById('paymentCard');
+    const dashAddrEl = document.getElementById('dashAddr');
+    const txidInput = document.getElementById('txid');
+    const verifyBtn = document.getElementById('verifyTx');
+    const txStatus = document.getElementById('txStatus');
 
-        function goBackToProducts() {
-            selectedProduct = null;
-            selectedPrice = 0;
-            
-            document.getElementById('productStep').classList.remove('hidden');
-            document.getElementById('orderStep').classList.add('hidden');
-        }
+    let cart = {};
 
-        function updateOrderSummary() {
-            const orderSummary = document.getElementById('orderSummary');
-            const walletBalanceOrder = document.getElementById('walletBalanceOrder');
-            const orderTotal = document.getElementById('orderTotal');
-            const balanceStatus = document.getElementById('balanceStatus');
-            
-            orderSummary.innerHTML = `
-                <p><strong>📍 Տեղակայություն:</strong> ${getLocationName(selectedLocation)}</p>
-                <p><strong>📦 Ապրանք:</strong> ${selectedProduct}</p>
-                <p><strong>💰 Գին:</strong> ${selectedPrice}$ USD</p>
-            `;
-            
-            walletBalanceOrder.textContent = walletBalance.toFixed(2) + ' USD';
-            orderTotal.textContent = selectedPrice + '$';
-            
-            balanceStatus.innerHTML = '✅ <span class="text-green-300">Պատրաստ է պատվիրելու համար</span>';
-            document.getElementById('confirmOrderBtn').disabled = false;
-        }
+    function renderProducts(){
+      productsEl.innerHTML='';
+      PRODUCTS.forEach(p=>{
+        const div = document.createElement('div'); div.className='product';
+        div.innerHTML = `
+          <div>
+            <div><strong>${p.title}</strong></div>
+            <div class="small muted">${p.weight} — $${p.priceUsd}</div>
+          </div>
+          <div style="min-width:170px;text-align:right">
+            <input type="number" min="0" step="1" value="0" data-id="${p.id}" style="width:72px"> <button data-add="${p.id}">Ավելացնել</button>
+          </div>`;
+        productsEl.appendChild(div);
+      });
 
-        // Step 3: Confirm order
-        document.getElementById('confirmOrderBtn').addEventListener('click', function() {
-            const walletAddress = document.getElementById('walletAddress').value.trim();
-            const phoneNumber = document.getElementById('phoneInput').value.trim();
-            const notes = document.getElementById('notesInput').value;
-
-            // Validate required fields
-            if (!walletAddress) {
-                alert('❌ Խնդրում ենք մուտքագրել ձեր wallet հասցեն');
-                return;
-            }
-
-            // Process order
-            orderCount++;
-            totalRevenue += selectedPrice;
-            
-            updateStats();
-            addToRecentOrders(selectedProduct, selectedPrice, selectedLocation);
-
-            if (autoSendEnabled) {
-                processAutoSend();
-            }
-
-            alert(`✅ Պատվերը հաջողությամբ ընդունվեց!\n\n📦 Ապրանք: ${selectedProduct}\n💰 Գին: ${selectedPrice}$\n📍 Տեղակայություն: ${getLocationName(selectedLocation)}\n💳 Wallet: ${walletAddress}${phoneNumber ? `\n📱 Հեռախոս: ${phoneNumber}` : ''}\n\n${autoSendEnabled ? '🤖 Ավտոմատ ուղարկում ակտիվ է' : '⏳ Մանուալ մշակում'}`);
-
-            // Reset to step 1
-            resetOrderProcess();
+      // add handlers
+      productsEl.querySelectorAll('[data-add]').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const id = e.target.getAttribute('data-add');
+          const qtyInput = productsEl.querySelector(`input[data-id="${id}"]`);
+          const q = parseInt(qtyInput.value||'0',10);
+          if(q>0){ cart[id] = (cart[id]||0) + q; qtyInput.value = 0; renderCart(); }
         });
+      });
+    }
 
-        function resetOrderProcess() {
-            selectedLocation = null;
-            selectedProduct = null;
-            selectedPrice = 0;
-            
-            document.getElementById('locationStep').classList.remove('hidden');
-            document.getElementById('productStep').classList.add('hidden');
-            document.getElementById('orderStep').classList.add('hidden');
-            
-            // Clear form fields (keep wallet address)
-            document.getElementById('phoneInput').value = '';
-            document.getElementById('notesInput').value = '';
+    function renderCart(){
+      cartEl.innerHTML='';
+      let total = 0;
+      for(const id in cart){
+        const p = PRODUCTS.find(x=>x.id===id);
+        const qty = cart[id];
+        const row = document.createElement('div'); row.className='cart-item';
+        row.innerHTML = `<div>${p.title} × ${qty}</div><div>$${(p.priceUsd*qty).toFixed(2)} <button data-rem="${id}">x</button></div>`;
+        cartEl.appendChild(row);
+        total += p.priceUsd*qty;
+      }
+      if(Object.keys(cart).length===0) cartEl.innerHTML='<div class="muted">Գման չապրանք</div>';
+      totalUSDel.textContent = 'Ընդհանուր՝ $' + total.toFixed(2);
+      cartEl.querySelectorAll('[data-rem]').forEach(b=>b.addEventListener('click', e=>{ const id=e.target.getAttribute('data-rem'); delete cart[id]; renderCart(); }));
+    }
+
+    checkoutBtn.addEventListener('click', ()=>{
+      if(Object.keys(cart).length===0){ alert('Սկզբի համար ավելացրե՛ք առնվազն 1 ապրանք։'); return; }
+
+      // Ստեղծել պատվերի մեթա
+      const district = document.getElementById('district').value;
+      const orderItems = Object.keys(cart).map(id=>{
+        const p = PRODUCTS.find(x=>x.id===id);
+        return { id, title:p.title, qty:cart[id], priceUsd:p.priceUsd };
+      });
+      const totalUsd = orderItems.reduce((s,i)=>s + i.qty*i.priceUsd, 0);
+
+      // Սահմանել որեւէ պահանջ DASH-ում (մի քանի ապրանք առանց փոխարկման => նայում ենք ամենամեծ պահանջը)
+      let requiredDash = 0;
+      for(const id in cart){ requiredDash = Math.max(requiredDash, REQUIRED_DASH[id] || 0); }
+
+      // Ցույց տալ ուղեցույցը վճարման համար
+      paymentCard.style.display = 'block';
+      dashAddrEl.textContent = DASH_ADDRESS;
+
+      // Պատրաստել ներքին խնդիրը, որը ուղարկվում է դեպի bot՝ sendData-ով
+      const payload = { type:'order_preview', district, items:orderItems, totalUsd, requiredDash };
+
+      // If running inside Telegram WebApp, show MainButton and prepare send
+      if(window.Telegram && window.Telegram.WebApp){
+        try{
+          window.Telegram.WebApp.MainButton.setText('Գործարք ուղարկել բոտին');
+          window.Telegram.WebApp.MainButton.show();
+          window.Telegram.WebApp.MainButton.onClick(()=>{
+            // Send order preview JSON to bot via sendData
+            window.Telegram.WebApp.sendData(JSON.stringify(payload));
+          });
+        }catch(e){ console.warn(e); }
+      } else {
+        // not in Telegram — fallback: copy JSON to clipboard
+        alert('Բառացիորեն բոտ-մոդ կամ Telegram WebView-ում չէք: Պատվերի տվյալները պատճենվել են clipboard-ին. Խնդրում ենք ուղարկել դրանք ձեր բոտին.');
+        navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      }
+    });
+
+    // TX verification — basic implementation using Insight API
+    verifyBtn.addEventListener('click', async ()=>{
+      const txid = (txidInput.value||'').trim();
+      txStatus.textContent = '';
+      if(!txid){ txStatus.textContent = 'Տվեք TXID'; return; }
+
+      txStatus.textContent = 'Ստուգվում...';
+
+      try{
+        // Example API: https://explorer.dash.org/insight-api/tx/{txid}
+        const res = await fetch('https://explorer.dash.org/insight-api/tx/' + txid);
+        if(!res.ok){ txStatus.textContent = 'API error: ' + res.status; return; }
+        const data = await res.json();
+
+        // Քանի որ API ֆորմատը կարող է տարբեր լինել, փորձենք գտնել ելքային արժեքները ու հասցեները
+        let totalToOurAddr = 0;
+        if(Array.isArray(data.vout)){
+          for(const v of data.vout){
+            if(v.scriptPubKey && v.scriptPubKey.addresses){
+              if(v.scriptPubKey.addresses.includes(DASH_ADDRESS)){
+                // v.value usually փողի արժեքն է (Dash)
+                totalToOurAddr += parseFloat(v.value||0);
+              }
+            }
+          }
         }
 
-        // Wallet functions
-        document.getElementById('addFundsBtn').addEventListener('click', function() {
-            const amount = prompt('💰 Մուտքագրեք գումարը (USD):');
-            if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                walletBalance += parseFloat(amount);
-                updateWalletDisplay();
-                document.getElementById('lastTransaction').textContent = `+${amount}$ (Լիցքավորում)`;
-                alert(`✅ Դաշը լիցքավորվեց!\n💰 Ավելացվեց: ${amount}$\n💳 Նոր մնացորդ: ${walletBalance}$`);
-            }
-        });
+        // Վերցնել պահանջը (եթե պատվերը դեռ պահպանված չէ՝ վերցնել վերջին պատվերից)
+        // Здесь простой подход: берем максимальный REQUIRED_DASH среди cart
+        let required = 0;
+        for(const id in cart) required = Math.max(required, REQUIRED_DASH[id] || 0);
 
-        document.getElementById('withdrawBtn').addEventListener('click', function() {
-            if (walletBalance <= 0) {
-                alert('❌ Դաշը դատարկ է');
-                return;
-            }
-            
-            const amount = prompt(`💸 Մուտքագրեք գումարը (USD):\n\nՀասանելի: ${walletBalance}$`);
-            if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-                if (parseFloat(amount) <= walletBalance) {
-                    walletBalance -= parseFloat(amount);
-                    updateWalletDisplay();
-                    document.getElementById('lastTransaction').textContent = `-${amount}$ (Հանում)`;
-                    alert(`✅ Գումարը հանվեց!\n💸 Հանված: ${amount}$\n💳 Մնացորդ: ${walletBalance}$`);
-                } else {
-                    alert('❌ Անբավարար մնացորդ');
-                }
-            }
-        });
+        if(totalToOurAddr >= required && totalToOurAddr>0){
+          txStatus.innerHTML = 'OK — TX հաստատված, փոխանցվել է ' + totalToOurAddr + ' DASH. Ստուգեք բոտը՝ պրոցեսը ավարտելու համար.';
 
-        // Auto send toggle
-        document.getElementById('autoSendToggle').addEventListener('change', function() {
-            autoSendEnabled = this.checked;
-            if (autoSendEnabled) {
-                alert('🤖 Ավտոմատ ուղարկումը միացված է!\n\n✅ Պատվերները կմշակվեն ավտոմատ\n⚡ Միջին ժամանակ: 15 րոպե\n🔔 Դուք կստանաք ծանուցումներ');
-            } else {
-                alert('⏸️ Ավտոմատ ուղարկումը անջատված է\n\n📝 Պատվերները կմշակվեն մանուալ');
-            }
-        });
+          // Отправляем сам TXID в бота (если Telegram WebApp доступен)
+          if(window.Telegram && window.Telegram.WebApp){
+            const sendPayload = { type:'tx_confirm', txid, paidDash: totalToOurAddr };
+            window.Telegram.WebApp.sendData(JSON.stringify(sendPayload));
+          }
 
-        // Test auto send
-        document.getElementById('testAutoSendBtn').addEventListener('click', function() {
-            if (!autoSendEnabled) {
-                alert('❌ Ավտոմատ ուղարկումը անջատված է\n\nԽնդրում ենք նախ միացնել ավտո-ռեժիմը');
-                return;
-            }
-            
-            processAutoSend();
-            alert('🧪 Թեստ ուղարկումը կատարվեց!\n\n✅ Համակարգը նորմալ է աշխատում\n🤖 Ավտոմատ մշակումը ակտիվ է\n⏱️ Հաջորդ ստուգումը 5 րոպե հետո');
-        });
-
-        function processAutoSend() {
-            const sentToday = document.getElementById('sentToday');
-            const successfulOrders = document.getElementById('successfulOrders');
-            
-            sentToday.textContent = parseInt(sentToday.textContent) + 1;
-            successfulOrders.textContent = parseInt(successfulOrders.textContent) + 1;
-            
-            // Simulate processing time
-            setTimeout(() => {
-                console.log('Auto-send processed successfully');
-            }, 1000);
+        } else {
+          txStatus.innerHTML = 'Փոխանցումը չի բավարարում պահանջը: Մենք ստացանք ' + totalToOurAddr + ' DASH — պահանջվել է նվազագույնը ' + required + ' DASH.';
         }
 
-        function updateWalletDisplay() {
-            document.getElementById('walletBalance').textContent = walletBalance.toFixed(2) + ' USD';
-        }
+      }catch(err){ console.error(err); txStatus.textContent = 'Սխալ ստուգման ընթացքում: ' + err.message; }
+    });
 
-        function updateStats() {
-            document.getElementById('totalOrders').textContent = orderCount;
-            document.getElementById('totalRevenue').textContent = totalRevenue + '$';
-            document.getElementById('avgOrderValue').textContent = orderCount > 0 ? (totalRevenue / orderCount).toFixed(0) + '$' : '0$';
-            document.getElementById('activeOrders').textContent = orderCount;
-        }
+    // սկիզբ
+    renderProducts(); renderCart();
 
-        function addToRecentOrders(product, price, location) {
-            const recentOrders = document.getElementById('recentOrders');
-            if (orderCount === 1) {
-                recentOrders.innerHTML = '';
-            }
-            
-            const orderElement = document.createElement('div');
-            orderElement.className = 'glass-card p-4 rounded-xl';
-            orderElement.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl flex items-center justify-center">
-                            <span class="text-white text-lg">📦</span>
-                        </div>
-                        <div>
-                            <p class="font-medium text-white">${product}</p>
-                            <p class="text-sm text-white/70">${getLocationName(location)} • Հիմա</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-green-300">${price}$</p>
-                        <p class="text-xs text-green-400">✅ Ընդունված</p>
-                    </div>
-                </div>
-            `;
-            recentOrders.insertBefore(orderElement, recentOrders.firstChild);
-            
-            // Keep only last 5 orders
-            while (recentOrders.children.length > 5) {
-                recentOrders.removeChild(recentOrders.lastChild);
-            }
-        }
-
-        function getLocationName(value) {
-            const locations = {
-                'marser': 'Մարսեր',
-                'malatia': 'Մալաթիա',
-                'sebastia': 'Սեբաստիա',
-                'koitas': 'Կոյտաս',
-                'kentron': 'Կենտրոն',
-                'ajapnyak': 'Աջափնյակ',
-                'nor-norq': 'Նոր Նորք'
-            };
-            return locations[value] || value;
-        }
-
-        // Initialize
-        updateWalletDisplay();
-        updateStats();
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96e22f8b850dddd1',t:'MTc1NTAyNDkxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  </script>
+</body>
 </html>
